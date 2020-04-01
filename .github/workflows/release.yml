@@ -1,4 +1,4 @@
-name: Release Charts
+name: Release Portainer Helm Chart
 
 on:
   push:
@@ -9,15 +9,42 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v1
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
       - name: Configure Git
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
+      # - name: Install Helm Binary
+      #   run: |
+      #     curl -fsSLo get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+      #     chmod 700 get_helm.sh
+      #     ./get_helm.sh
+
+      - name: Fetch history
+        run: git fetch --prune --unshallow
+
+      - name: Run chart-testing (lint)
+        id: lint
+        uses: helm/chart-testing-action@v1.0.0-rc.1
+        with:
+          command: lint
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.0.0-alpha.3
+        # Only build a kind cluster if there are chart changes to test.
+        if: steps.lint.outputs.changed == 'true'
+
+      - name: Run chart-testing (install)
+        uses: helm/chart-testing-action@v1.0.0-rc.1
+        with:
+          command: install
+
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.0.0-rc.1
+        with:
+          version: 0.1.0
         env:
           CR_TOKEN: "${{ secrets.CR_TOKEN }}"
