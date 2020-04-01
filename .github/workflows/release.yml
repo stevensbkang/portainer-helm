@@ -46,5 +46,6 @@ jobs:
         uses: helm/chart-releaser-action@v1.0.0-rc.1
         with:
           version: 0.1.0
+          charts_dir: charts
         env:
           CR_TOKEN: "${{ secrets.CR_TOKEN }}"
